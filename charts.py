@@ -1,3 +1,4 @@
+# charts.py
 import plotly.graph_objects as go
 import plotly.express as px
 import pandas as pd
@@ -11,20 +12,12 @@ def afficher_graphiques(resultats):
     st.plotly_chart(fig, use_container_width=True)
 
 def afficher_comparaison(resultats, mode_comparaison, config):
-    # Cette fonction n'est pas utilisée actuellement, 'pass' sert de placeholder.
     pass
 
 def afficher_camembert(prix_achat, aide, entretien_total, fmd, duree):
-    # Cette fonction n'est pas utilisée actuellement, 'pass' sert de placeholder.
     pass
 
 def afficher_camembert_comparatif(resultats, mode_comparaison, config, return_fig=False):
-    """
-    Affiche ou retourne un camembert comparatif des coûts.
-
-    Args:
-        return_fig (bool): Si True, retourne l'objet Figure de Plotly au lieu de l'afficher.
-    """
     if mode_comparaison == "Aucun":
         return go.Figure() if return_fig else None
 
@@ -52,7 +45,6 @@ def afficher_camembert_comparatif(resultats, mode_comparaison, config, return_fi
     if fig:
         st.plotly_chart(fig, use_container_width=True)
 
-
 def afficher_tableau_details(resultats):
     st.markdown("### 📊 Détail des coûts du vélo")
     data = {
@@ -72,3 +64,37 @@ def afficher_tableau_details(resultats):
     }
     df = pd.DataFrame(data)
     st.table(df)
+
+def afficher_camembert_repartition(details: dict, title: str):
+    """Affiche un camembert de la répartition des coûts."""
+    if not details:
+        st.warning("Données de répartition non disponibles.")
+        return
+    
+    valid_details = {k: v for k, v in details.items() if v > 0}
+    if not valid_details:
+        st.info("Aucun coût à afficher dans la répartition.")
+        return
+
+    data = pd.DataFrame(list(valid_details.items()), columns=['Poste', 'Coût'])
+    fig = px.pie(data, values='Coût', names='Poste', title=title, hole=0.4)
+    fig.update_traces(textinfo='percent+label', textposition='inside')
+    st.plotly_chart(fig, use_container_width=True)
+
+def afficher_graphique_economies_cumulees(economie_annuelle: float, duree_annees: int = 10):
+    """Affiche un graphique linéaire des économies cumulées sur plusieurs années."""
+    if economie_annuelle <= 0:
+        st.info("Le graphique des économies cumulées n'est pas affiché car il n'y a pas d'économie annuelle.")
+        return
+        
+    annees = list(range(1, duree_annees + 1))
+    economies = [economie_annuelle * annee for annee in annees]
+    
+    df = pd.DataFrame({
+        "Année": annees,
+        "Économies cumulées (€)": economies
+    })
+    
+    fig = px.line(df, x="Année", y="Économies cumulées (€)", title="Projection des économies sur 10 ans", markers=True)
+    fig.update_layout(yaxis_title="Économies cumulées (€)")
+    st.plotly_chart(fig, use_container_width=True)

@@ -1,5 +1,6 @@
+# utils.py
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, Union
 
 @dataclass
 class CoutResultats:
@@ -17,9 +18,8 @@ class CoutResultats:
 class CoutVoitureResultats:
     """Stocke les résultats du calcul de coût pour la voiture."""
     cout_annuel: float = 0.0
+    cout_km: float = 0.0  # Ajout du coût par km
     details: Dict[str, float] = field(default_factory=dict)
-
-# --- DEBUT DE LA MODIFICATION ---
 
 @dataclass
 class VoitureParams:
@@ -33,8 +33,6 @@ class VoitureParams:
     km_annuels: int = 10000
     consommation: float = 6.5
     prix_carburant: float = 1.90
-
-# --- FIN DE LA MODIFICATION ---
 
 
 def calculer_couts(prix_achat: int, aide: int, entretien_total: float, duree: int, fmd: int, km_an: int) -> CoutResultats:
@@ -60,23 +58,25 @@ def calculer_couts(prix_achat: int, aide: int, entretien_total: float, duree: in
         km_an=km_an,
         duree=duree
     )
+
 def calculer_couts_voiture(params: VoitureParams) -> CoutVoitureResultats:
     """
     Calcule le coût TCO annuel d'une voiture et retourne un objet CoutVoitureResultats.
     """
     try:
-        # L'accès se fait maintenant via des attributs, ce qui est plus sûr.
-        amortissement = (params.prix_achat - params.valeur_revente) / params.duree_possession
+        amortissement = (params.prix_achat - params.valeur_revente) / params.duree_possession if params.duree_possession > 0 else 0
         cout_carburant = (params.km_annuels / 100) * params.consommation * params.prix_carburant
         cout_fixe_annuel = params.assurance + params.entretien + params.autres_frais
         cout_total_annuel = amortissement + cout_carburant + cout_fixe_annuel
+        
+        cout_km = cout_total_annuel / params.km_annuels if params.km_annuels > 0 else 0
         
         details = {
             "Amortissement": amortissement, "Carburant": cout_carburant,
             "Assurance": params.assurance, "Entretien": params.entretien,
             "Autres frais": params.autres_frais
         }
-        return CoutVoitureResultats(cout_annuel=cout_total_annuel, details=details)
+        return CoutVoitureResultats(cout_annuel=cout_total_annuel, cout_km=cout_km, details=details)
         
     except ZeroDivisionError:
         return CoutVoitureResultats()

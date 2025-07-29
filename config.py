@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# config.py
 
 class AppConfig:
     """
@@ -13,6 +13,10 @@ class AppConfig:
     SEMAINES_TRAVAILLEES_PAR_AN = 45
     CO2_VOITURE_G_PAR_KM = 120  # Émissions moyennes en g/km
 
+    # Constantes pour les nouvelles statistiques
+    CO2_ABSORPTION_ARBRE_KG_PAR_AN = 22
+    PRIX_MOYEN_CAFE = 3.12 # Vous pourrez ajuster ce prix
+    
     # Paramètres pour les profils par défaut (vélo et voiture)
     DEFAULT_PROFIL_VELO_FILE = 'profils.json'
     
