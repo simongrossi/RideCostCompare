@@ -19,6 +19,24 @@ class CoutVoitureResultats:
     cout_annuel: float = 0.0
     details: Dict[str, float] = field(default_factory=dict)
 
+# --- DEBUT DE LA MODIFICATION ---
+
+@dataclass
+class VoitureParams:
+    """Stocke les paramètres de configuration pour la voiture."""
+    prix_achat: int = 20000
+    valeur_revente: int = 5000
+    duree_possession: int = 5
+    assurance: int = 600
+    entretien: int = 500
+    autres_frais: int = 200
+    km_annuels: int = 10000
+    consommation: float = 6.5
+    prix_carburant: float = 1.90
+
+# --- FIN DE LA MODIFICATION ---
+
+
 def calculer_couts(prix_achat: int, aide: int, entretien_total: float, duree: int, fmd: int, km_an: int) -> CoutResultats:
     """
     Calcule les différents coûts liés à l'utilisation d'un vélo et retourne un objet CoutResultats.
@@ -42,34 +60,23 @@ def calculer_couts(prix_achat: int, aide: int, entretien_total: float, duree: in
         km_an=km_an,
         duree=duree
     )
-
-def calculer_couts_voiture(params: dict) -> CoutVoitureResultats:
+def calculer_couts_voiture(params: VoitureParams) -> CoutVoitureResultats:
     """
     Calcule le coût TCO annuel d'une voiture et retourne un objet CoutVoitureResultats.
     """
     try:
-        # --- DEBUT DE LA MODIFICATION ---
-        # Utilisation de .get() pour éviter les erreurs si une clé est absente
-        # et pour fournir une valeur par défaut.
-        amortissement = (params.get('prix_achat', 0) - params.get('valeur_revente', 0)) / params.get('duree_possession', 1)
-        cout_carburant = (params.get('km_annuels', 0) / 100) * params.get('consommation', 0) * params.get('prix_carburant', 0)
-        
-        assurance = params.get('assurance', 0)
-        entretien = params.get('entretien', 0)
-        autres_frais = params.get('autres_frais', 0)
-
-        cout_fixe_annuel = assurance + entretien + autres_frais
+        # L'accès se fait maintenant via des attributs, ce qui est plus sûr.
+        amortissement = (params.prix_achat - params.valeur_revente) / params.duree_possession
+        cout_carburant = (params.km_annuels / 100) * params.consommation * params.prix_carburant
+        cout_fixe_annuel = params.assurance + params.entretien + params.autres_frais
         cout_total_annuel = amortissement + cout_carburant + cout_fixe_annuel
         
         details = {
             "Amortissement": amortissement, "Carburant": cout_carburant,
-            "Assurance": assurance, "Entretien": entretien,
-            "Autres frais": autres_frais
+            "Assurance": params.assurance, "Entretien": params.entretien,
+            "Autres frais": params.autres_frais
         }
         return CoutVoitureResultats(cout_annuel=cout_total_annuel, details=details)
-        # --- FIN DE LA MODIFICATION ---
         
     except ZeroDivisionError:
-        # Cette sécurité est conservée au cas où duree_possession serait 0 via le .get(key, 0)
-        # même si nous avons mis une valeur par défaut de 1.
         return CoutVoitureResultats()

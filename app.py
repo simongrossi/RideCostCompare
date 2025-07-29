@@ -2,10 +2,12 @@ import streamlit as st
 import json
 import pandas as pd
 from io import BytesIO
-from dataclasses import asdict # <-- Ajout nécessaire pour la compatibilité avec les graphiques
+from dataclasses import asdict
 
 # Import des fonctions locales et de la configuration
-from utils import calculer_couts, calculer_couts_voiture
+# --- DEBUT DE LA MODIFICATION ---
+from utils import calculer_couts, calculer_couts_voiture, VoitureParams
+# --- FIN DE LA MODIFICATION ---
 from charts import afficher_graphiques, afficher_camembert, afficher_camembert_comparatif
 from config import AppConfig
 
@@ -23,7 +25,6 @@ def load_data(filepath=AppConfig.DEFAULT_PROFIL_VELO_FILE):
         with open(filepath, 'r', encoding='utf-8') as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
-        # Profil par défaut si le fichier n'existe pas ou est corrompu
         return {
             "Vélo Classique (700€)": {
                 "prix_achat": 700, "aide": 50, "entretien_annuel": 80, 
@@ -47,8 +48,12 @@ if 'profils_velo' not in st.session_state:
     st.session_state['profils_velo'] = load_data()
     st.session_state['profil_velo_actif'] = list(st.session_state.profils_velo.keys())[0]
 
+# --- DEBUT DE LA MODIFICATION ---
 if 'voiture_params' not in st.session_state:
-    st.session_state['voiture_params'] = AppConfig.DEFAULT_VOITURE_PARAMS.copy()
+    # Initialisation avec la dataclass pour plus de clarté et de sécurité
+    st.session_state['voiture_params'] = VoitureParams()
+# --- FIN DE LA MODIFICATION ---
+
 
 # --- SIDEBAR (Contrôles du vélo) ---
 with st.sidebar:
@@ -108,11 +113,9 @@ with tab_velo:
     st.header(f"Analyse du coût pour : {st.session_state.profil_velo_actif}")
     col1, col2 = st.columns(2)
     with col1:
-        # CORRECTION: Utilisation de l'accès par attribut
         st.metric("Coût annuel (après FMD)", f"{resultats_velo.cout_annuel_fmd:.2f} €")
         st.metric("Coût par km", f"{resultats_velo.cout_km_fmd:.2f} €")
     with col2:
-        # CORRECTION: Utilisation de l'accès par attribut
         st.metric("Coût total sur la durée", f"{resultats_velo.cout_total_fmd:.2f} €")
         st.metric("Km parcourus par an", f"{km_an_velo:.0f} km")
     
@@ -121,7 +124,6 @@ with tab_velo:
         profil_data['prix_achat'], profil_data['aide'], 
         entretien_total_velo, profil_data['fmd'], profil_data['duree']
     )
-    # CORRECTION: Conversion du dataclass en dictionnaire pour la fonction de graphique
     afficher_graphiques(asdict(resultats_velo))
 
 # --- Onglet Voiture ---
@@ -129,38 +131,40 @@ with tab_voiture:
     st.header("Simulation du coût de la voiture")
     st.write("Renseignez ici les informations pour obtenir une estimation précise du coût annuel de votre voiture.")
     
-    vp = st.session_state.voiture_params
+    # --- DEBUT DE LA MODIFICATION ---
+    # vp est maintenant un objet VoitureParams
+    vp = st.session_state.voiture_params 
     with st.form("car_form"):
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Coûts d'acquisition")
-            vp['prix_achat'] = st.number_input("Prix d'achat (€)", value=vp['prix_achat'])
-            vp['valeur_revente'] = st.number_input("Valeur de revente estimée (€)", value=vp['valeur_revente'])
-            vp['duree_possession'] = st.number_input("Durée de possession (ans)", value=vp['duree_possession'], min_value=1)
+            # Les widgets modifient directement les attributs de l'objet
+            vp.prix_achat = st.number_input("Prix d'achat (€)", value=vp.prix_achat)
+            vp.valeur_revente = st.number_input("Valeur de revente estimée (€)", value=vp.valeur_revente)
+            vp.duree_possession = st.number_input("Durée de possession (ans)", value=vp.duree_possession, min_value=1)
             
             st.subheader("Coûts fixes annuels")
-            vp['assurance'] = st.number_input("Assurance annuelle (€)", value=vp['assurance'])
-            vp['entretien'] = st.number_input("Entretien annuel (€)", value=vp['entretien'])
-            vp['autres_frais'] = st.number_input("Péages, parking, etc. (€/an)", value=vp['autres_frais'])
+            vp.assurance = st.number_input("Assurance annuelle (€)", value=vp.assurance)
+            vp.entretien = st.number_input("Entretien annuel (€)", value=vp.entretien)
+            vp.autres_frais = st.number_input("Péages, parking, etc. (€/an)", value=vp.autres_frais)
         
         with col2:
             st.subheader("Coûts variables")
-            vp['km_annuels'] = st.number_input("Kilomètres annuels", value=vp.get('km_annuels', int(km_an_velo)))
-            vp['consommation'] = st.number_input("Consommation (L/100km)", value=vp['consommation'])
-            vp['prix_carburant'] = st.number_input("Prix du carburant (€/L)", value=vp['prix_carburant'], format="%.2f")
+            vp.km_annuels = st.number_input("Kilomètres annuels", value=vp.km_annuels)
+            vp.consommation = st.number_input("Consommation (L/100km)", value=vp.consommation)
+            vp.prix_carburant = st.number_input("Prix du carburant (€/L)", value=vp.prix_carburant, format="%.2f")
 
         car_submitted = st.form_submit_button("Calculer le coût de la voiture")
+    # --- FIN DE LA MODIFICATION ---
 
     # --- Calculs et affichage Voiture ---
-    resultats_voiture = calculer_couts_voiture(vp)
+    resultats_voiture = calculer_couts_voiture(vp) # On passe directement l'objet
     if car_submitted:
         st.success(f"Coût annuel de la voiture calculé !")
 
     st.header("Résultats pour la voiture")
-    # CORRECTION: Utilisation de l'accès par attribut
     st.metric("Coût annuel total de la voiture", f"{resultats_voiture.cout_annuel:.2f} €")
     
-    # CORRECTION: Utilisation de l'accès par attribut
     if resultats_voiture.details:
         df_car_details = pd.DataFrame.from_dict(resultats_voiture.details, orient='index', columns=['Coût Annuel (€)'])
         st.dataframe(df_car_details)
@@ -169,13 +173,12 @@ with tab_voiture:
 with tab_comparaison:
     st.header("Synthèse de la comparaison")
     
-    # CORRECTION: Utilisation de l'accès par attribut
     cout_velo = resultats_velo.cout_annuel_fmd
     cout_voiture = resultats_voiture.cout_annuel
     
-    if cout_voiture > 0: # Éviter les divisions par zéro si la voiture n'est pas configurée
+    if cout_voiture > 0:
         economie_annuelle = cout_voiture - cout_velo
-        co2_economise_kg = (vp['km_annuels'] * AppConfig.CO2_VOITURE_G_PAR_KM) / 1000
+        co2_economise_kg = (vp.km_annuels * AppConfig.CO2_VOITURE_G_PAR_KM) / 1000
 
         col1, col2, col3 = st.columns(3)
         col1.metric("💰 Économie annuelle", f"{economie_annuelle:.0f} €", help="Différence entre le coût annuel de la voiture et celui du vélo (après FMD).")
@@ -190,13 +193,11 @@ with tab_comparaison:
 
         st.markdown("---")
         
-        # Préparation des données pour le graphique comparatif
         data_comparaison = {
             'cout_annuel_fmd': cout_velo,
-            'km_an': vp['km_annuels'] # CORRECTION: Utilisation de l'attribut du résultat vélo
+            'km_an': vp.km_annuels
         }
-        # Calcul du coût au km de la voiture pour la comparaison
-        cout_voiture_km = cout_voiture / vp['km_annuels'] if vp['km_annuels'] > 0 else 0
+        cout_voiture_km = cout_voiture / vp.km_annuels if vp.km_annuels > 0 else 0
         config_comparaison = {'COUT_VOITURE_KM': cout_voiture_km}
         
         afficher_camembert_comparatif(data_comparaison, "Voiture", config_comparaison)
