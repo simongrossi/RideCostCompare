@@ -2,11 +2,12 @@ import streamlit as st
 import json
 import pandas as pd
 from io import BytesIO
+from dataclasses import asdict # <-- Ajout nécessaire pour la compatibilité avec les graphiques
 
 # Import des fonctions locales et de la configuration
 from utils import calculer_couts, calculer_couts_voiture
 from charts import afficher_graphiques, afficher_camembert, afficher_camembert_comparatif
-from config import AppConfig  # <-- Import de la configuration centralisée
+from config import AppConfig
 
 # --- Configuration de la page Streamlit ---
 st.set_page_config(
@@ -107,10 +108,12 @@ with tab_velo:
     st.header(f"Analyse du coût pour : {st.session_state.profil_velo_actif}")
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Coût annuel (après FMD)", f"{resultats_velo['cout_annuel_fmd']:.2f} €")
-        st.metric("Coût par km", f"{resultats_velo['cout_km_fmd']:.2f} €")
+        # CORRECTION: Utilisation de l'accès par attribut
+        st.metric("Coût annuel (après FMD)", f"{resultats_velo.cout_annuel_fmd:.2f} €")
+        st.metric("Coût par km", f"{resultats_velo.cout_km_fmd:.2f} €")
     with col2:
-        st.metric("Coût total sur la durée", f"{resultats_velo['cout_total_fmd']:.2f} €")
+        # CORRECTION: Utilisation de l'accès par attribut
+        st.metric("Coût total sur la durée", f"{resultats_velo.cout_total_fmd:.2f} €")
         st.metric("Km parcourus par an", f"{km_an_velo:.0f} km")
     
     st.markdown("---")
@@ -118,7 +121,8 @@ with tab_velo:
         profil_data['prix_achat'], profil_data['aide'], 
         entretien_total_velo, profil_data['fmd'], profil_data['duree']
     )
-    afficher_graphiques(resultats_velo)
+    # CORRECTION: Conversion du dataclass en dictionnaire pour la fonction de graphique
+    afficher_graphiques(asdict(resultats_velo))
 
 # --- Onglet Voiture ---
 with tab_voiture:
@@ -153,18 +157,21 @@ with tab_voiture:
         st.success(f"Coût annuel de la voiture calculé !")
 
     st.header("Résultats pour la voiture")
-    st.metric("Coût annuel total de la voiture", f"{resultats_voiture['cout_annuel']:.2f} €")
+    # CORRECTION: Utilisation de l'accès par attribut
+    st.metric("Coût annuel total de la voiture", f"{resultats_voiture.cout_annuel:.2f} €")
     
-    if resultats_voiture['details']:
-        df_car_details = pd.DataFrame.from_dict(resultats_voiture['details'], orient='index', columns=['Coût Annuel (€)'])
+    # CORRECTION: Utilisation de l'accès par attribut
+    if resultats_voiture.details:
+        df_car_details = pd.DataFrame.from_dict(resultats_voiture.details, orient='index', columns=['Coût Annuel (€)'])
         st.dataframe(df_car_details)
 
 # --- Onglet Comparaison ---
 with tab_comparaison:
     st.header("Synthèse de la comparaison")
     
-    cout_velo = resultats_velo['cout_annuel_fmd']
-    cout_voiture = resultats_voiture['cout_annuel']
+    # CORRECTION: Utilisation de l'accès par attribut
+    cout_velo = resultats_velo.cout_annuel_fmd
+    cout_voiture = resultats_voiture.cout_annuel
     
     if cout_voiture > 0: # Éviter les divisions par zéro si la voiture n'est pas configurée
         economie_annuelle = cout_voiture - cout_velo
@@ -186,7 +193,7 @@ with tab_comparaison:
         # Préparation des données pour le graphique comparatif
         data_comparaison = {
             'cout_annuel_fmd': cout_velo,
-            'km_an': vp['km_annuels']
+            'km_an': vp['km_annuels'] # CORRECTION: Utilisation de l'attribut du résultat vélo
         }
         # Calcul du coût au km de la voiture pour la comparaison
         cout_voiture_km = cout_voiture / vp['km_annuels'] if vp['km_annuels'] > 0 else 0
