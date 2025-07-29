@@ -11,15 +11,15 @@
     "jours_semaine_max": 4
   },
   "V.A.E. Standard (2500€)": {
-    "prix_achat": 2500,
+    "prix_achat": 3500,
     "aide": 400,
     "entretien_annuel": 180,
     "duree": 5,
-    "fmd": 400,
+    "fmd": 100,
     "km_jour": 12.0,
-    "jours_semaine_min": 3,
-    "jours_semaine_max": 5,
-    "aller_retour": true
+    "nb_trajets_jour": 2,
+    "jours_semaine_min": 2,
+    "jours_semaine_max": 5
   },
   "V.A.E. Premium (3500€)": {
     "prix_achat": 3500,

@@ -11,9 +11,9 @@ def display_comparaison_tab(resultats_velo_min, resultats_velo_max, profil_data)
     """Affiche le contenu de l'onglet de comparaison avec une allocation des coûts par fourchette."""
     st.header("Analyse comparative du trajet domicile-travail")
     st.info("""
-    Cette analyse compare le coût de votre trajet à vélo avec le coût complet (TCO)
-    de la voiture pour les mêmes kilomètres, en allouant les frais fixes au prorata.
     La simulation est présentée sous forme de fourchette (min/max) basée sur votre usage du vélo.
+    Le scénario **pessimiste** combine le coût le plus élevé du vélo avec le coût le plus bas de la voiture.
+    Le scénario **optimiste** combine le coût le plus bas du vélo avec le coût le plus élevé de la voiture.
     """)
 
     if resultats_velo_min and resultats_velo_max and profil_data:
@@ -36,33 +36,46 @@ def display_comparaison_tab(resultats_velo_min, resultats_velo_max, profil_data)
         cout_velo_min = resultats_velo_min.cout_annuel_fmd
         cout_velo_max = resultats_velo_max.cout_annuel_fmd
         
-        economie_min = cout_voiture_min - cout_velo_max
-        economie_max = cout_voiture_max - cout_velo_min
+        economie_min = cout_voiture_min - cout_velo_max  # Cas le plus défavorable
+        economie_max = cout_voiture_max - cout_velo_min  # Cas le plus favorable
         
         # --- Affichage de la comparaison ---
         st.markdown("---")
-        st.subheader("💰 Coût annuel du trajet Domicile-Travail (Fourchette)")
-        col1, col2 = st.columns(2)
-        col1.metric("En vélo (TCO après aides)", f"{cout_velo_min:.0f}€ - {cout_velo_max:.0f}€")
-        col2.metric("En voiture (TCO alloué)", f"{cout_voiture_min:.0f}€ - {cout_voiture_max:.0f}€")
+        st.subheader("💰 Coût annuel du trajet (Fourchette Min-Max)")
+        
+        st.markdown("##### Coût du vélo")
+        v_col1, v_col2 = st.columns(2)
+        v_col1.metric("Min (optimiste)", f"{cout_velo_min:.0f}€")
+        v_col2.metric("Max (pessimiste)", f"{cout_velo_max:.0f}€")
+
+        st.markdown("##### Coût de la voiture (part allouée au trajet)")
+        c_col1, c_col2 = st.columns(2)
+        c_col1.metric("Min (usage faible)", f"{cout_voiture_min:.0f}€")
+        c_col2.metric("Max (usage élevé)", f"{cout_voiture_max:.0f}€")
+
+        st.markdown("---")
+        st.subheader("✅ Économie annuelle finale")
 
         if economie_max > 0:
-            st.success(f"**Économie annuelle estimée : entre {max(0, economie_min):.0f}€ et {economie_max:.0f}€**")
+            eco_col1, eco_col2 = st.columns(2)
+            eco_col1.metric("Économie minimale", f"{max(0, economie_min):.0f}€")
+            eco_col2.metric("Économie maximale", f"{economie_max:.0f}€")
             
             st.markdown("---")
             st.subheader("✨ Vos gains en détail (basé sur un scénario moyen)")
             
             eco_moyenne = (economie_min + economie_max) / 2
-            afficher_graphique_economies_cumulees(eco_moyenne)
+            if eco_moyenne > 0:
+                afficher_graphique_economies_cumulees(eco_moyenne)
             
             co2_economise_moyen = ((resultats_velo_min.km_an + resultats_velo_max.km_an) / 2 * AppConfig.CO2_VOITURE_G_PAR_KM) / 1000
             arbres_equivalents = co2_economise_moyen / AppConfig.CO2_ABSORPTION_ARBRE_KG_PAR_AN
             cafes_par_mois = (eco_moyenne / AppConfig.PRIX_MOYEN_CAFE) / 12
 
-            c1, c2, c3 = st.columns(3)
-            c1.metric("CO₂ économisé", f"~{co2_economise_moyen:.0f} kg/an")
-            c2.metric("🌳 Équivalent Arbres", f"~{arbres_equivalents:.1f}")
-            c3.metric("☕ Cafés offerts / mois", f"~{cafes_par_mois:.1f}")
+            g_col1, g_col2, g_col3 = st.columns(3)
+            g_col1.metric("CO₂ économisé", f"~{co2_economise_moyen:.0f} kg/an")
+            g_col2.metric("🌳 Équivalent Arbres", f"~{arbres_equivalents:.1f}")
+            g_col3.metric("☕ Cafés offerts / mois", f"~{cafes_par_mois:.1f}")
 
         else:
             st.warning("Selon cette simulation, le vélo coûterait plus cher que la voiture, même dans le scénario le plus optimiste.")
