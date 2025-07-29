@@ -1,6 +1,6 @@
 # utils.py
 from dataclasses import dataclass, field
-from typing import Dict, Union
+from typing import Dict
 
 @dataclass
 class CoutResultats:
@@ -18,7 +18,7 @@ class CoutResultats:
 class CoutVoitureResultats:
     """Stocke les résultats du calcul de coût pour la voiture."""
     cout_annuel: float = 0.0
-    cout_km: float = 0.0  # Ajout du coût par km
+    cout_km: float = 0.0
     details: Dict[str, float] = field(default_factory=dict)
 
 @dataclass
@@ -30,10 +30,11 @@ class VoitureParams:
     assurance: int = 600
     entretien: int = 500
     autres_frais: int = 200
-    km_annuels: int = 10000
+    # Kilométrage total est maintenant calculé dynamiquement
+    km_domicile_travail: int = 0 # Sera mis à jour depuis le vélo
+    km_autres: int = 7000        # Sera mis à jour depuis les estimations
     consommation: float = 6.5
     prix_carburant: float = 1.90
-
 
 def calculer_couts(prix_achat: int, aide: int, entretien_total: float, duree: int, fmd: int, km_an: int) -> CoutResultats:
     """
@@ -63,13 +64,15 @@ def calculer_couts_voiture(params: VoitureParams) -> CoutVoitureResultats:
     """
     Calcule le coût TCO annuel d'une voiture et retourne un objet CoutVoitureResultats.
     """
+    km_annuels = params.km_domicile_travail + params.km_autres
+    
     try:
         amortissement = (params.prix_achat - params.valeur_revente) / params.duree_possession if params.duree_possession > 0 else 0
-        cout_carburant = (params.km_annuels / 100) * params.consommation * params.prix_carburant
+        cout_carburant = (km_annuels / 100) * params.consommation * params.prix_carburant
         cout_fixe_annuel = params.assurance + params.entretien + params.autres_frais
         cout_total_annuel = amortissement + cout_carburant + cout_fixe_annuel
         
-        cout_km = cout_total_annuel / params.km_annuels if params.km_annuels > 0 else 0
+        cout_km = cout_total_annuel / km_annuels if km_annuels > 0 else 0
         
         details = {
             "Amortissement": amortissement, "Carburant": cout_carburant,
