@@ -1,0 +1,32 @@
+{
+  "Vélo Classique (700€)": {
+    "prix_achat": 700,
+    "aide": 50,
+    "entretien_annuel": 80,
+    "duree": 6,
+    "fmd": 300,
+    "km_jour": 8.0,
+    "jours_semaine": 4,
+    "aller_retour": true
+  },
+  "V.A.E. Standard (2500€)": {
+    "prix_achat": 2500,
+    "aide": 400,
+    "entretien_annuel": 180,
+    "duree": 5,
+    "fmd": 400,
+    "km_jour": 12.0,
+    "jours_semaine": 5,
+    "aller_retour": true
+  },
+  "V.A.E. Premium (3500€)": {
+    "prix_achat": 3500,
+    "aide": 400,
+    "entretien_annuel": 220,
+    "duree": 5,
+    "fmd": 400,
+    "km_jour": 12.0,
+    "jours_semaine": 5,
+    "aller_retour": true
+  }
+}
