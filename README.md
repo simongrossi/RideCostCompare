@@ -116,4 +116,4 @@ fpdf
 
 ## 📃 Licence
 
-Projet open-source. Licence à définir.
+Projet open-source. MIT License
