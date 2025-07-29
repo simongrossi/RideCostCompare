@@ -4,31 +4,26 @@ import pandas as pd
 from io import BytesIO
 
 # Import des fonctions locales
-from charts import afficher_graphiques, afficher_comparaison, afficher_camembert, afficher_camembert_comparatif, afficher_tableau_details
-from utils import calculer_couts
+from utils import calculer_couts, calculer_couts_voiture
+from charts import afficher_graphiques, afficher_camembert, afficher_camembert_comparatif
 
 # --- Configuration et Constantes par défaut ---
-# Ces valeurs seront modifiables par l'utilisateur dans l'interface
 DEFAULT_CONFIG = {
-    "COUT_NAVIGO_ANNUEL": 1036.80,
-    "COUT_VOITURE_KM": 0.45,
     "SEMAINES_TRAVAILLEES": 45,
     "CO2_VOITURE_G_PAR_KM": 120
 }
 
 st.set_page_config(page_title="RideCostCompare", layout="wide", initial_sidebar_state="expanded")
 
-# --- Fonctions de gestion de profils (lecture/écriture) ---
+# --- Fonctions de gestion de données ---
 def load_data(filepath='profils.json'):
-    """Charge les profils depuis un fichier JSON."""
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
-        return {"Vélo par défaut": {"prix_achat": 1000, "aide": 300, "entretien_annuel": 150, "duree": 5, "fmd": 200, "km_jour": 8.0, "jours_semaine": 5, "aller_retour": True}}
+        return {"Vélo Classique (700€)": {"prix_achat": 700, "aide": 50, "entretien_annuel": 80, "duree": 6, "fmd": 300, "km_jour": 8.0, "jours_semaine": 4, "aller_retour": True}}
 
 def save_data(data, filepath='profils.json'):
-    """Sauvegarde les profils dans un fichier JSON."""
     try:
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
@@ -38,163 +33,140 @@ def save_data(data, filepath='profils.json'):
         return False
 
 # --- Initialisation de l'état de la session ---
-if 'profils' not in st.session_state:
-    st.session_state['profils'] = load_data()
-    st.session_state['profil_actif'] = list(st.session_state['profils'].keys())[0]
-if 'config' not in st.session_state:
-    st.session_state['config'] = DEFAULT_CONFIG.copy()
+if 'profils_velo' not in st.session_state:
+    st.session_state['profils_velo'] = load_data()
+    st.session_state['profil_velo_actif'] = list(st.session_state['profils_velo'].keys())[0]
 
-# --- INTERFACE UTILISATEUR (SIDEBAR) ---
-st.sidebar.title("RideCostCompare 🚲")
-st.sidebar.markdown("Un simulateur pour calculer le coût réel de vos déplacements à vélo.")
+if 'voiture_params' not in st.session_state:
+    st.session_state['voiture_params'] = {
+        "prix_achat": 20000, "valeur_revente": 5000, "duree_possession": 5,
+        "assurance": 600, "entretien": 500, "autres_frais": 200,
+        "km_annuels": 10000, "consommation": 6.5, "prix_carburant": 1.90
+    }
 
-# --- Section de gestion des profils ---
-st.sidebar.markdown("### 👤 Profils d'utilisateur")
-profil_selectionne = st.sidebar.selectbox(
-    "Choisir un profil",
-    list(st.session_state['profils'].keys()),
-    index=list(st.session_state['profils'].keys()).index(st.session_state.get('profil_actif', 0)),
-    key='profil_selector'
-)
-if profil_selectionne != st.session_state['profil_actif']:
-    st.session_state['profil_actif'] = profil_selectionne
-    st.rerun()
+# --- SIDEBAR (Contrôles du vélo) ---
+with st.sidebar:
+    st.title("RideCostCompare 🚲")
+    st.header("Profil Vélo")
+    profil_selectionne = st.selectbox("Choisir un profil vélo", list(st.session_state.profils_velo.keys()), key='profil_selector')
 
-profil_data = st.session_state['profils'][st.session_state['profil_actif']]
+    if profil_selectionne != st.session_state.profil_velo_actif:
+        st.session_state.profil_velo_actif = profil_selectionne
+        st.rerun()
 
-# --- Formulaire pour les paramètres du vélo ---
-with st.sidebar.form(key='params_form'):
-    st.markdown("#### 🛠️ Paramètres du vélo")
-    p_achat = st.number_input("Prix d'achat (€)", min_value=0, value=profil_data.get("prix_achat", 0))
-    p_aide = st.number_input("Aide à l'achat (€)", min_value=0, value=profil_data.get("aide", 0))
-    p_entretien = st.number_input("Entretien annuel (€)", min_value=0, value=profil_data.get("entretien_annuel", 0))
-    p_duree = st.number_input("Durée d'amortissement (ans)", min_value=1, value=profil_data.get("duree", 5))
-    p_fmd = st.number_input("Forfait Mobilités Durables (€/an)", min_value=0, value=profil_data.get("fmd", 0))
-
-    st.markdown("#### 📏 Paramètres de déplacement")
-    p_km_jour = st.number_input("Distance par trajet (km)", min_value=0.0, value=profil_data.get('km_jour', 0.0), format="%.2f")
-    p_aller_retour = st.checkbox("Le trajet est un aller-retour ?", value=profil_data.get('aller_retour', True))
-    p_jours_semaine = st.number_input("Jours travaillés par semaine", min_value=0, max_value=7, value=profil_data.get('jours_semaine', 3))
+    profil_data = st.session_state.profils_velo[st.session_state.profil_velo_actif]
     
-    submitted = st.form_submit_button('🔄 Mettre à jour les calculs')
+    with st.form(key='velo_form'):
+        st.subheader("Paramètres du Vélo")
+        p_achat = st.number_input("Prix d'achat (€)", value=profil_data.get("prix_achat", 0))
+        p_aide = st.number_input("Aide à l'achat (€)", value=profil_data.get("aide", 0))
+        p_entretien = st.number_input("Entretien annuel (€)", value=profil_data.get("entretien_annuel", 0))
+        p_duree = st.number_input("Durée d'amortissement (ans)", value=profil_data.get("duree", 5))
+        p_fmd = st.number_input("Forfait Mobilités Durables (€/an)", value=profil_data.get("fmd", 0))
+        st.subheader("Paramètres de Déplacement")
+        p_km_jour = st.number_input("Distance par trajet (km)", value=profil_data.get('km_jour', 0.0))
+        p_aller_retour = st.checkbox("Trajet aller-retour ?", value=profil_data.get('aller_retour', True))
+        p_jours_semaine = st.number_input("Jours par semaine", value=profil_data.get('jours_semaine', 3))
+        submitted = st.form_submit_button('🔄 Appliquer les modifications')
+        
+        if submitted:
+            profil_data.update({"prix_achat": p_achat, "aide": p_aide, "entretien_annuel": p_entretien, "duree": p_duree, "fmd": p_fmd, "km_jour": p_km_jour, "aller_retour": p_aller_retour, "jours_semaine": p_jours_semaine})
+            save_data(st.session_state.profils_velo)
+            st.success("Profil sauvegardé !")
 
-# --- Mise à jour des données du profil actif (sans sauvegarder) ---
-if submitted:
-    profil_data.update({
-        "prix_achat": p_achat, "aide": p_aide, "entretien_annuel": p_entretien, "duree": p_duree,
-        "fmd": p_fmd, "km_jour": p_km_jour, "aller_retour": p_aller_retour, "jours_semaine": p_jours_semaine
-    })
-
-# --- Actions sur les profils (sauvegarder, créer, supprimer) ---
-st.sidebar.markdown("---")
-st.sidebar.markdown("#### 💾 Gérer les profils")
-
-if st.sidebar.button("Enregistrer les modifications"):
-    if save_data(st.session_state['profils']):
-        st.sidebar.success(f"Profil '{st.session_state['profil_actif']}' sauvegardé !")
-
-with st.sidebar.expander("➕ Créer un nouveau profil"):
-    new_profile_name = st.text_input("Nom du nouveau profil")
-    if st.button("Créer et sauvegarder"):
-        if new_profile_name:
-            if new_profile_name not in st.session_state['profils']:
-                st.session_state['profils'][new_profile_name] = profil_data.copy()
-                if save_data(st.session_state['profils']):
-                    st.session_state['profil_actif'] = new_profile_name
-                    st.success(f"Profil '{new_profile_name}' créé !")
-                    st.rerun()
-            else:
-                st.warning("Ce nom de profil existe déjà.")
-        else:
-            st.warning("Veuillez donner un nom au profil.")
-
-if st.sidebar.button("🗑️ Supprimer le profil actif", type="secondary"):
-    if len(st.session_state['profils']) > 1:
-        del st.session_state['profils'][st.session_state['profil_actif']]
-        if save_data(st.session_state['profils']):
-            st.session_state['profil_actif'] = list(st.session_state['profils'].keys())[0]
-            st.warning(f"Profil supprimé. Passage au profil '{st.session_state['profil_actif']}'.")
-            st.rerun()
-    else:
-        st.error("Impossible de supprimer le dernier profil.")
-
-# --- Paramètres de comparaison avancés ---
-with st.sidebar.expander("⚙️ Paramètres de comparaison"):
-    st.session_state.config['COUT_VOITURE_KM'] = st.number_input("Coût au km de la voiture (€)", value=st.session_state.config.get('COUT_VOITURE_KM', 0.45))
-    st.session_state.config['COUT_NAVIGO_ANNUEL'] = st.number_input("Coût annuel des transports (€)", value=st.session_state.config.get('COUT_NAVIGO_ANNUEL', 1036.80))
-    st.session_state.config['SEMAINES_TRAVAILLEES'] = st.number_input("Semaines travaillées par an", value=st.session_state.config.get('SEMAINES_TRAVAILLEES', 45))
-    st.session_state.config['CO2_VOITURE_G_PAR_KM'] = st.number_input("Émissions CO₂ (g/km)", value=st.session_state.config.get('CO2_VOITURE_G_PAR_KM', 120))
-
-
-# --- CALCULS PRINCIPAUX ---
+# --- Calculs Vélo ---
 distance_trajet = profil_data['km_jour'] * (2 if profil_data['aller_retour'] else 1)
-km_an = distance_trajet * profil_data['jours_semaine'] * st.session_state.config['SEMAINES_TRAVAILLEES']
-entretien_total = profil_data['entretien_annuel'] * profil_data['duree']
+km_an_velo = distance_trajet * profil_data['jours_semaine'] * DEFAULT_CONFIG['SEMAINES_TRAVAILLEES']
+entretien_total_velo = profil_data['entretien_annuel'] * profil_data['duree']
+resultats_velo = calculer_couts(profil_data['prix_achat'], profil_data['aide'], entretien_total_velo, profil_data['duree'], profil_data['fmd'], km_an_velo)
 
-resultats = calculer_couts(
-    profil_data['prix_achat'], profil_data['aide'], entretien_total,
-    profil_data['duree'], profil_data['fmd'], km_an
-)
+# --- Définition des Onglets ---
+tab_velo, tab_voiture, tab_comparaison = st.tabs(["🚲 Simulateur Vélo", "🚗 Simulateur Voiture", "📊 Tableau de Comparaison"])
 
-# --- CALCULS D'ANALYSE APPROFONDIE ---
-cout_annuel_voiture = st.session_state.config['COUT_VOITURE_KM'] * km_an
-economie_vs_voiture = cout_annuel_voiture - resultats['cout_annuel_fmd']
-economie_vs_transport = st.session_state.config['COUT_NAVIGO_ANNUEL'] - resultats['cout_annuel_fmd']
-co2_economise_kg = (km_an * st.session_state.config['CO2_VOITURE_G_PAR_KM']) / 1000
+# --- Onglet Vélo ---
+with tab_velo:
+    st.header(f"Analyse du coût pour : {st.session_state.profil_velo_actif}")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Coût annuel (après FMD)", f"{resultats_velo['cout_annuel_fmd']:.2f} €")
+        st.metric("Coût par km", f"{resultats_velo['cout_km_fmd']:.2f} €")
+    with col2:
+        st.metric("Coût total sur la durée", f"{resultats_velo['cout_total_fmd']:.2f} €")
+        st.metric("Km parcourus par an", f"{km_an_velo:.0f} km")
+    
+    st.markdown("---")
+    afficher_camembert(profil_data['prix_achat'], profil_data['aide'], entretien_total_velo, profil_data['fmd'], profil_data['duree'])
+    afficher_graphiques(resultats_velo)
 
-temps_rentabilite = float('inf')
-if economie_vs_voiture > 0:
-    cout_achat_net = profil_data['prix_achat'] - profil_data['aide']
-    if cout_achat_net > 0:
-        temps_rentabilite = (cout_achat_net / economie_vs_voiture) * 12 # en mois
+# --- Onglet Voiture ---
+with tab_voiture:
+    st.header("Simulation du coût de la voiture")
+    st.write("Renseignez ici les informations pour obtenir une estimation précise du coût annuel de votre voiture.")
+    
+    vp = st.session_state.voiture_params
+    with st.form("car_form"):
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Coûts d'acquisition")
+            vp['prix_achat'] = st.number_input("Prix d'achat (€)", value=vp['prix_achat'])
+            vp['valeur_revente'] = st.number_input("Valeur de revente estimée (€)", value=vp['valeur_revente'])
+            vp['duree_possession'] = st.number_input("Durée de possession (ans)", value=vp['duree_possession'], min_value=1)
+            
+            st.subheader("Coûts fixes annuels")
+            vp['assurance'] = st.number_input("Assurance annuelle (€)", value=vp['assurance'])
+            vp['entretien'] = st.number_input("Entretien annuel (€)", value=vp['entretien'])
+            vp['autres_frais'] = st.number_input("Péages, parking, etc. (€/an)", value=vp['autres_frais'])
+        
+        with col2:
+            st.subheader("Coûts variables")
+            vp['km_annuels'] = st.number_input("Kilomètres annuels", value=vp.get('km_annuels', int(km_an_velo)))
+            vp['consommation'] = st.number_input("Consommation (L/100km)", value=vp['consommation'])
+            vp['prix_carburant'] = st.number_input("Prix du carburant (€/L)", value=vp['prix_carburant'], format="%.2f")
 
-# --- AFFICHAGE DES RÉSULTATS (PAGE PRINCIPALE) ---
-st.title(f"Analyse pour le profil : {st.session_state['profil_actif']}")
+        car_submitted = st.form_submit_button("Calculer le coût de la voiture")
 
-st.markdown("### Indicateurs Clés Annuels")
-col1, col2, col3 = st.columns(3)
-col1.metric("💰 Économie vs Voiture", f"{economie_vs_voiture:.0f} €")
-col2.metric("💰 Économie vs Transports", f"{economie_vs_transport:.0f} €")
-col3.metric("🌍 CO₂ économisé", f"{co2_economise_kg:.0f} kg")
+    # --- Calculs et affichage Voiture ---
+    resultats_voiture = calculer_couts_voiture(vp)
+    if car_submitted:
+        st.success(f"Coût annuel de la voiture calculé !")
 
-if temps_rentabilite != float('inf'):
-    st.info(f"📈 **Point de rentabilité vs voiture :** Votre vélo sera rentabilisé en **{temps_rentabilite:.1f} mois**.")
+    st.header("Résultats pour la voiture")
+    st.metric("Coût annuel total de la voiture", f"{resultats_voiture['cout_annuel']:.2f} €")
+    
+    if resultats_voiture['details']:
+        df_car_details = pd.DataFrame.from_dict(resultats_voiture['details'], orient='index', columns=['Coût Annuel (€)'])
+        st.dataframe(df_car_details)
 
-st.markdown("---")
+# --- Onglet Comparaison ---
+with tab_comparaison:
+    st.header("Synthèse de la comparaison")
+    
+    cout_velo = resultats_velo['cout_annuel_fmd']
+    cout_voiture = resultats_voiture['cout_annuel']
+    
+    economie_annuelle = cout_voiture - cout_velo
+    co2_economise_kg = (vp['km_annuels'] * DEFAULT_CONFIG['CO2_VOITURE_G_PAR_KM']) / 1000
 
-col1, col2 = st.columns([1, 1])
+    col1, col2, col3 = st.columns(3)
+    col1.metric("💰 Économie annuelle", f"{economie_annuelle:.0f} €", help="Différence entre le coût annuel de la voiture et celui du vélo (après FMD).")
+    col2.metric("🌍 CO₂ économisé / an", f"{co2_economise_kg:.0f} kg", help=f"Basé sur {DEFAULT_CONFIG['CO2_VOITURE_G_PAR_KM']} gCO₂/km.")
+    
+    temps_rentabilite_mois = float('inf')
+    if economie_annuelle > 0:
+        cout_achat_net_velo = profil_data['prix_achat'] - profil_data['aide']
+        if cout_achat_net_velo > 0:
+            temps_rentabilite_mois = (cout_achat_net_velo / economie_annuelle) * 12
+            col3.metric("📈 Point de rentabilité", f"{temps_rentabilite_mois:.1f} mois", help="Temps nécessaire pour que les économies remboursent le coût d'achat net du vélo.")
 
-with col1:
-    afficher_camembert(profil_data['prix_achat'], profil_data['aide'], entretien_total, profil_data['fmd'], profil_data['duree'])
-    afficher_graphiques(resultats)
-
-with col2:
-    afficher_tableau_details(resultats)
-    mode_comparaison = st.selectbox(
-        "Détail de la comparaison :",
-        ["Voiture", "Transports en commun"],
-        key="compare_mode_detail"
-    )
-    afficher_camembert_comparatif(resultats, mode_comparaison, st.session_state.config)
-
-# --- Export Excel ---
-df_export = pd.DataFrame({
-    "Poste": ["Coût total", "Coût annuel", "Coût mensuel", "Coût par km", "Km annuels"],
-    "Sans FMD (€)": [f"{resultats['cout_total']:.2f}", f"{resultats['cout_annuel']:.2f}", f"{resultats['cout_annuel'] / 12:.2f}", f"{resultats['cout_km']:.2f}", f"{resultats['km_an']}"],
-    "Avec FMD (€)": [f"{resultats['cout_total_fmd']:.2f}", f"{resultats['cout_annuel_fmd']:.2f}", f"{resultats['cout_annuel_fmd'] / 12:.2f}", f"{resultats['cout_km_fmd']:.2f}", ""]
-}).set_index('Poste')
-
-@st.cache_data
-def to_excel(df):
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, sheet_name='Resultats RideCostCompare')
-    return output.getvalue()
-
-excel_file = to_excel(df_export)
-st.download_button(
-    label="📥 Exporter les résultats en Excel",
-    data=excel_file,
-    file_name=f"Resultats_{st.session_state['profil_actif']}.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
+    st.markdown("---")
+    
+    # Utilisation de la fonction de graphique comparatif existante
+    # On la "trompe" en lui passant les bonnes données
+    data_comparaison = {
+        'cout_annuel_fmd': cout_velo,
+        'km_an': vp['km_annuels']
+    }
+    config_comparaison = {
+        'COUT_VOITURE_KM': cout_voiture / vp['km_annuels'] if vp['km_annuels'] > 0 else 0
+    }
+    afficher_camembert_comparatif(data_comparaison, "Voiture", config_comparaison)
