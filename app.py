@@ -64,20 +64,20 @@ with st.sidebar:
             st.session_state.profil_velo_actif = profil_selectionne
             st.rerun()
 
-        profil_data = st.session_state.profils_velo.get(st.session_state.profil_velo_actif, {})
+        profil_data_sidebar = st.session_state.profils_velo.get(st.session_state.profil_velo_actif, {})
         
         with st.form(key='velo_form'):
             st.subheader("Paramètres du Vélo")
-            p_achat = st.number_input("Prix d'achat (€)", value=profil_data.get("prix_achat", 0))
-            p_aide = st.number_input("Aide à l'achat (€)", value=profil_data.get("aide", 0))
-            p_entretien = st.number_input("Entretien annuel (€)", value=profil_data.get("entretien_annuel", 0))
-            p_duree = st.number_input("Durée d'amortissement (ans)", value=profil_data.get("duree", 5), min_value=1)
-            p_fmd = st.number_input("Forfait Mobilités Durables (€/an)", value=profil_data.get("fmd", 0))
+            p_achat = st.number_input("Prix d'achat (€)", value=profil_data_sidebar.get("prix_achat", 0))
+            p_aide = st.number_input("Aide à l'achat (€)", value=profil_data_sidebar.get("aide", 0))
+            p_entretien = st.number_input("Entretien annuel (€)", value=profil_data_sidebar.get("entretien_annuel", 0))
+            p_duree = st.number_input("Durée d'amortissement (ans)", value=profil_data_sidebar.get("duree", 5), min_value=1)
+            p_fmd = st.number_input("Forfait Mobilités Durables (€/an)", value=profil_data_sidebar.get("fmd", 0))
             
             st.subheader("Paramètres de Déplacement")
-            p_km_jour = st.number_input("Distance par trajet (km)", value=profil_data.get('km_jour', 0.0))
-            p_aller_retour = st.checkbox("Trajet aller-retour ?", value=profil_data.get('aller_retour', True))
-            p_jours_semaine = st.number_input("Jours par semaine", value=profil_data.get('jours_semaine', 3))
+            p_km_jour = st.number_input("Distance par trajet (km)", value=profil_data_sidebar.get('km_jour', 0.0))
+            p_aller_retour = st.checkbox("Trajet aller-retour ?", value=profil_data_sidebar.get('aller_retour', True))
+            p_jours_semaine = st.number_input("Jours par semaine", value=profil_data_sidebar.get('jours_semaine', 3))
             
             submitted = st.form_submit_button('🔄 Appliquer les modifications')
             if submitted:
@@ -89,9 +89,11 @@ with st.sidebar:
                 st.session_state.profils_velo[st.session_state.profil_velo_actif] = updated_data
                 if save_data(st.session_state.profils_velo):
                     st.success("Profil sauvegardé !")
+                st.rerun()
 
-# --- Calculs principaux pour le vélo ---
+# --- Calculs principaux ---
 resultats_velo = None
+profil_data = None  # Initialisation à None
 if st.session_state.profil_velo_actif:
     profil_data = st.session_state.profils_velo[st.session_state.profil_velo_actif]
     distance_trajet = profil_data['km_jour'] * (2 if profil_data['aller_retour'] else 1)
@@ -113,4 +115,5 @@ with tab_voiture:
     display_voiture_tab()
 
 with tab_comparaison:
-    display_comparaison_tab(resultats_velo)
+    # On passe maintenant profil_data en plus de resultats_velo
+    display_comparaison_tab(resultats_velo, profil_data)
