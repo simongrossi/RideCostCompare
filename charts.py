@@ -11,10 +11,12 @@ def afficher_graphiques(resultats):
     st.plotly_chart(fig, use_container_width=True)
 
 def afficher_comparaison(resultats, mode_comparaison, config):
-    # ... (fonction inchangée)
+    # Cette fonction n'est pas utilisée actuellement, 'pass' sert de placeholder.
+    pass
 
 def afficher_camembert(prix_achat, aide, entretien_total, fmd, duree):
-    # ... (fonction inchangée)
+    # Cette fonction n'est pas utilisée actuellement, 'pass' sert de placeholder.
+    pass
 
 def afficher_camembert_comparatif(resultats, mode_comparaison, config, return_fig=False):
     """

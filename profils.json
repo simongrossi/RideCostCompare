@@ -5,9 +5,9 @@
     "entretien_annuel": 80,
     "duree": 6,
     "fmd": 300,
-    "km_jour": 8.0,
-    "jours_semaine": 4,
-    "aller_retour": true
+    "km_jour": 11.0,
+    "aller_retour": true,
+    "jours_semaine": 4
   },
   "V.A.E. Standard (2500€)": {
     "prix_achat": 2500,
@@ -16,8 +16,8 @@
     "duree": 5,
     "fmd": 400,
     "km_jour": 12.0,
-    "jours_semaine": 5,
-    "aller_retour": true
+    "aller_retour": true,
+    "jours_semaine": 5
   },
   "V.A.E. Premium (3500€)": {
     "prix_achat": 3500,
