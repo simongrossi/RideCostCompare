@@ -1,52 +1,57 @@
 # RideCostCompare 🚲
 
-**RideCostCompare** est un simulateur développé avec Streamlit permettant de **calculer et visualiser en détail le coût de possession d’un vélo**. Il compare ces coûts à ceux d’autres moyens de transport comme la voiture ou les transports en commun (Navigo), et fournit des analyses financières et écologiques pour aider à la prise de décision.
+**RideCostCompare** est un simulateur Streamlit permettant de **calculer et comparer le coût des déplacements** (vélo, voiture, transports en commun, etc.) en tenant compte de l'achat, de l'entretien, des aides, du nombre de kilomètres parcourus et de nombreux paramètres économiques.
 
 ---
 
 ## ✨ Fonctionnalités
 
-- **Calcul détaillé des coûts** :
-  - Achat, entretien, aide à l’achat, durée d’amortissement, Forfait Mobilités Durables (FMD).
-- **Gestion complète des profils** :
-  - Créez, modifiez, enregistrez ou supprimez vos profils dans l’interface. Stockage dans `profils.json`.
-- **Analyse comparative personnalisable** :
-  - Comparez les coûts du vélo avec ceux de la voiture ou des transports en commun.
-- **Indicateurs de performance** :
-  - 💰 Économie annuelle vs voiture et transports
-  - 📈 Point de rentabilité (en mois)
-  - 🌍 CO₂ économisé (en kg)
+- **Simulateur de coût vélo** :
+  - Prix d'achat, aides, entretien annuel, amortissement, Forfait Mobilités Durables (FMD)
+  - Distance quotidienne, jours par semaine, aller-retour
+  - Calculs détaillés : coût total, coût annuel, coût par km
+- **Simulateur de coût voiture** :
+  - Prix d’achat, revente, durée de possession
+  - Assurance, entretien, autres frais fixes
+  - Consommation, prix carburant, km annuels
+  - Estimation du coût annuel global
+- **Comparaison intelligente vélo vs voiture** :
+  - Affichage du gain économique annuel
+  - Calcul du **point de rentabilité** (en mois)
+  - Estimation des **émissions de CO₂ économisées**
 - **Visualisations interactives** :
-  - Graphiques en barres et en camembert via Plotly
+  - Graphiques en barres et camemberts avec Plotly
+- **Gestion des profils vélo** :
+  - Création, mise à jour, suppression, sauvegarde dans `profils.json`
 - **Export des résultats** :
-  - 📤 Téléchargement Excel en un clic
-  - (Prévu) 📄 Export PDF avec résumé graphique
+  - 📤 Téléchargement Excel des coûts vélo
+  - (Prévu) Export PDF avec résumé graphique
 
 ---
 
 ## 📸 Aperçu
 
-*(Ajoutez ici une capture d'écran de l’application en fonctionnement)*
+*(Ajoutez ici une capture d’écran de l’application)*
 
 ---
 
-## 🚀 Installation et Lancement
+## 🚀 Installation
 
-### 1. Cloner le dépôt
+### 1. Cloner le projet
 
 ```bash
-git clone https://github.com/<votre-profil>/RideCostCompare.git
+git clone https://github.com/<votre-utilisateur>/RideCostCompare.git
 cd RideCostCompare
 ```
 
-### 2. Créer un environnement virtuel (recommandé)
+### 2. Créer un environnement virtuel
 
 ```bash
-# Sous Linux/MacOS
+# Linux / macOS
 python3 -m venv venv
 source venv/bin/activate
 
-# Sous Windows
+# Windows
 python -m venv venv
 .env\Scriptsctivate
 ```
@@ -57,53 +62,49 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-### 4. Lancer l'application Streamlit
+### 4. Lancer l’application
 
 ```bash
 streamlit run app.py
 ```
 
-L'application s’ouvre automatiquement dans votre navigateur.
-
 ---
 
-## 📁 Structure du Projet
+## 📁 Structure du projet
 
 ```
 .
-├── app.py              # Application principale Streamlit
-├── charts.py           # Graphiques interactifs (Plotly)
-├── utils.py            # Fonctions de calcul du coût
-├── export.py           # Fonctions d’export Excel et PDF
-├── profils.json        # Profils utilisateurs (données modifiables)
-├── requirements.txt    # Dépendances du projet
+├── app.py              # Application Streamlit
+├── charts.py           # Graphiques Plotly
+├── utils.py            # Fonctions de calcul vélo et voiture
+├── export.py           # Fonctions d’export (Excel/PDF)
+├── profils.json        # Profils vélo enregistrés
+├── requirements.txt    # Dépendances Python
 └── README.md           # Ce fichier
 ```
 
 ---
 
-## ⚙️ Configuration & Profils
+## ⚙️ Profils et paramètres
 
-- Le fichier `profils.json` contient les scénarios de vélo préremplis :
-  - Vélo Classique (700 €)
-  - V.A.E. Standard (2500 €)
-  - V.A.E. Premium (3500 €)
-- Vous pouvez modifier ou ajouter des profils directement dans l’application ou en éditant ce fichier.
+- Les profils vélo sont enregistrés dans `profils.json` et modifiables via l'interface.
+- Les paramètres voiture sont modifiables dans l'onglet correspondant.
 
 ---
 
 ## 🔜 Prochaines fonctionnalités
 
-- Export PDF enrichi avec graphiques intégrés.
-- Camembert de comparaison entre les modes (vélo vs voiture vs Navigo).
-- Ajout de la projection sur 10 ans.
-- Enregistrement automatique des simulations et réinitialisation rapide des champs.
+- Export PDF enrichi avec graphiques
+- Choix entre kilométrage simple et aller-retour
+- Réinitialisation rapide des champs
+- Projection de coûts sur plusieurs années
+- Sauvegarde automatique de l’état de simulation
 
 ---
 
 ## 🧩 Dépendances principales
 
-```text
+```
 streamlit
 plotly
 pandas
@@ -115,4 +116,4 @@ fpdf
 
 ## 📃 Licence
 
-Ce projet est open-source. Licence à définir selon votre choix (MIT, GPL, etc.).
+Projet open-source. Licence à définir.
